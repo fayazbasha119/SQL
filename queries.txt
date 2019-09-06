@@ -1,0 +1,35 @@
+to find total no of tables in a db:
+-----------------------------------
+USE AdventureWorks2017_OLTP
+SELECT Count(*) as total_tables
+FROM INFORMATION_SCHEMA.TABLES
+
+to change the owner of the db:
+------------------------------
+USE mydatabase
+exec sp_changedbowner 'sa', 'true'
+
+to find the count of all tables in the db:
+------------------------------------------
+DECLARE @QueryString NVARCHAR(MAX) ;
+SELECT @QueryString = COALESCE(@QueryString + ' UNION ALL ','')
+                      + 'SELECT '
+                      + '''' + QUOTENAME(SCHEMA_NAME(sOBJ.schema_id))
+                      + '.' + QUOTENAME(sOBJ.name) + '''' + ' AS [TableName]
+                      , COUNT(*) AS [RowCount] FROM '
+                      + QUOTENAME(SCHEMA_NAME(sOBJ.schema_id))
+                      + '.' + QUOTENAME(sOBJ.name) + ' WITH (NOLOCK) '
+FROM sys.objects AS sOBJ
+WHERE
+      sOBJ.type = 'U'
+      AND sOBJ.is_ms_shipped = 0x0
+ORDER BY SCHEMA_NAME(sOBJ.schema_id), sOBJ.name ;
+EXEC sp_executesql @QueryString
+GO
+
+to find duplicates in a table:
+------------------------------
+SELECT name, COUNT(email) 
+FROM users
+GROUP BY email
+HAVING COUNT(email) > 1
